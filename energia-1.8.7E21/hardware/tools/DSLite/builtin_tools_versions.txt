@@ -1,0 +1,1 @@
+energia.dslite=8.2.0.1400
