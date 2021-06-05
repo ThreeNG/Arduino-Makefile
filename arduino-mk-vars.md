@@ -97,6 +97,25 @@ ARM_TOOLS_DIR =
 
 ----
 
+### ARM_TOOLS_VER
+
+**Description:**
+
+Sub-directory where the arm toolchain is installed - usually the tool version.
+
+Can usually be detected from `$ARDUINO_PACKAGE_DIR` /tools subdirectory when ARM
+device support is installed. Will resolve latest version if multiple found.
+
+**Example:**
+
+```Makefile
+ARM_TOOLS_VER = 7-2017q4
+```
+
+**Requirement:** *Optional*
+
+----
+
 ### RESET_CMD
 
 **Description:**
@@ -109,6 +128,38 @@ Defaults to `ard-reset-arduino` with the extra `--caterina` flag for atmega32u4 
 
 ```Makefile
 RESET_CMD = $(HOME)/gertduino/reset
+```
+
+**Requirement:** *Optional*
+
+----
+
+### PYTHON_CMD
+
+**Description:**
+
+Path to Python binary. Requires pyserial module installed. Makefile will error if unable to auto-find as utility scripts will not work. To override this, give it an empty define.
+
+**Example:**
+
+```Makefile
+PYTHON_CMD = /usr/bin/python3
+```
+
+**Requirement:** *Optional*
+
+----
+
+### GREP_CMD
+
+**Description:**
+
+Path to GNU grep binary. Only added for macOS, which has BSD grep by default but results in some parsing warnings. macOS users should install GNU grep using Homebrew.
+
+**Example:**
+
+```Makefile
+GREP_CMD = /bin/grep
 ```
 
 **Requirement:** *Optional*
@@ -526,6 +577,26 @@ CORE = arduino
 CORE = robot
 # tiny core (ALTERNATE_CORE = arduino-tiny)
 CORE = tiny
+```
+
+**Requirement:** *Optional*
+
+----
+
+### BOARD
+
+**Description:**
+
+Board identifier that passes to a compile option as -DARDUINO_$(BOARD).
+
+Usually can be auto-detected as `build.board` from `boards.txt`.
+
+If not found build.board entry, use upper-case converted "$(ARCHITECTURE)_$(BOARD_TAG)".
+
+**Example:**
+
+```Makefile
+BOARD = AVR_LEONARD
 ```
 
 **Requirement:** *Optional*
@@ -1249,6 +1320,24 @@ MONITOR_CMD = minicom
 
 ----
 
+### MONITOR_PARAMS
+
+**Description:**
+
+Additional parameters for the putty -sercfg command line argument.
+
+Interpreted as a comma-separated list of configuration options.
+
+**Example:**
+
+```Makefile
+MONITOR_PARAMS = 8,1,n,N
+```
+
+**Requirement:** *Optional*
+
+----
+
 ### PRE_BUILD_HOOK
 
 **Description:**
@@ -1798,6 +1887,16 @@ device support is installed.
 
 ----
 
+### BOSSA_VER
+
+**Description:**
+
+`bossa` sub-directory - usually the tool version. Will auto-detect to highest version found.
+
+**Requirement:** *Optional*
+
+----
+
 ### BOSSA_OPTS
 
 **Description:**
@@ -1818,6 +1917,16 @@ Path to openocd binary.
 
 Can usually be detected from `$ARDUINO_PACKAGE_DIR` /tools subdirectory when ARM
 device support is installed.
+
+**Requirement:** *Optional*
+
+----
+
+### OPENOCD_VER
+
+**Description:**
+
+`openocd` sub-directory - usually the tool version. Will auto-detect to highest version found.
 
 **Requirement:** *Optional*
 
@@ -1878,16 +1987,16 @@ CTAGS_OPTS = -V
 
 ----
 
-### CTAGS_CMD
+### CTAGS_EXEC
 
 **Description:**
 
-Location of `ctags` binary. Defaults to user path.
+Path to the `ctags` binary. Defaults to user path.
 
 **Example:**
 
 ```Makefile
-CTAGS_CMD = /usr/local/bin/
+CTAGS_EXEC = /usr/local/bin/ctags
 ```
 
 **Requirement:** *Optional*

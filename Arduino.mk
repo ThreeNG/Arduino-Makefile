@@ -674,6 +674,16 @@ ifeq ($(strip $(NO_CORE)),)
         $(call show_config_variable,VARIANT,[USER])
     endif
 
+    ifndef BOARD
+	BOARD := $(call PARSE_BOARD,$(BOARD_TAG),build.board)
+        ifndef BOARD
+            BOARD := $(shell echo $(ARCHITECTURE)_$(BOARD_TAG) | tr '[:lower:]' '[:upper:]')
+        endif
+        $(call show_config_variable,BOARD,[COMPUTED],(from build.board))
+    else
+        $(call show_config_variable,BOARD,[USER])
+    endif
+
     # see if we are a caterina device like leonardo or micro
     CATERINA := $(findstring caterina,$(call PARSE_BOARD,$(BOARD_TAG),menu.(chip|cpu).$(BOARD_SUB).bootloader.file))
     ifndef CATERINA
@@ -853,15 +863,16 @@ endif
 # Reset
 
 ifndef RESET_CMD
-  ARD_RESET_ARDUINO := $(shell which ard-reset-arduino 2> /dev/null)
-  ifndef ARD_RESET_ARDUINO
+  ARD_RESET_ARDUINO_PATH := $(shell which ard-reset-arduino 2> /dev/null)
+  ifndef ARD_RESET_ARDUINO_PATH
     # same level as *.mk in bin directory when checked out from git
     # or in $PATH when packaged
-    ARD_RESET_ARDUINO = $(ARDMK_DIR)/bin/ard-reset-arduino
+    ARD_RESET_ARDUINO_PATH = $(ARDMK_DIR)/bin/ard-reset-arduino
   endif
+  ARD_RESET_ARDUINO := $(PYTHON_CMD) $(ARD_RESET_ARDUINO_PATH)
   ifneq (,$(findstring CYGWIN,$(shell uname -s)))
       # confirm user is using default cygwin unix Python (which uses ttySx) and not Windows Python (which uses COMx)
-      ifeq ($(shell which python),/usr/bin/python)
+      ifeq ($(PYTHON_CMD),/usr/bin/python)
         RESET_CMD = $(ARD_RESET_ARDUINO) $(ARD_RESET_OPTS) $(DEVICE_PATH)
       else
         RESET_CMD = $(ARD_RESET_ARDUINO) $(ARD_RESET_OPTS) $(call get_monitor_port)
@@ -869,6 +880,9 @@ ifndef RESET_CMD
     else
         RESET_CMD = $(ARD_RESET_ARDUINO) $(ARD_RESET_OPTS) $(call get_monitor_port)
     endif
+    $(call show_config_variable,RESET_CMD,[COMPUTED],(from PYTHON_CMD, ARD_RESET_OPTS and MONITOR_PORT))
+else
+    $(call show_config_variable,RESET_CMD,[USER])
 endif
 
 ifneq ($(CATERINA),)
@@ -1004,7 +1018,7 @@ ifeq ($(strip $(NO_CORE)),)
             $(call show_config_variable,MONITOR_BAUDRATE,[DETECTED], (in sketch))
         endif
     else
-        $(call show_config_variable,MONITOR_BAUDRATE, [USER])
+        $(call show_config_variable,MONITOR_BAUDRATE,[USER])
     endif
 
     ifndef MONITOR_CMD
@@ -1162,7 +1176,8 @@ else
 endif
 
 # Using += instead of =, so that CPPFLAGS can be set per sketch level
-CPPFLAGS      += -$(MCU_FLAG_NAME)=$(MCU) -DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERSION) $(ARDUINO_ARCH_FLAG) \
+CPPFLAGS      += -$(MCU_FLAG_NAME)=$(MCU) -DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERSION) -DARDUINO_$(BOARD) $(ARDUINO_ARCH_FLAG) \
+         "-DARDUINO_BOARD=\"$(BOARD)\"" "-DARDUINO_VARIANT=\"$(VARIANT)\"" \
         -I$(ARDUINO_CORE_PATH) -I$(ARDUINO_CORE_PATH)/api -I$(ARDUINO_VAR_PATH)/$(VARIANT) \
         $(SYS_INCLUDES) $(PLATFORM_INCLUDES) $(USER_INCLUDES) -Wall -ffunction-sections \
         -fdata-sections
@@ -1227,15 +1242,24 @@ CFLAGS        += $(CFLAGS_STD)
 CXXFLAGS      += -fpermissive -fno-exceptions $(CXXFLAGS_STD)
 ASFLAGS       += -x assembler-with-cpp
 DIAGNOSTICS_COLOR_WHEN ?= always
-ifeq ($(shell expr $(CC_VERNUM) '>' 490), 1)
-    ASFLAGS  += -flto
-    CXXFLAGS += -fno-threadsafe-statics -flto -fno-devirtualize -fdiagnostics-color=$(DIAGNOSTICS_COLOR_WHEN)
-    CFLAGS   += -flto -fno-fat-lto-objects -fdiagnostics-color=$(DIAGNOSTICS_COLOR_WHEN)
+
+# Flags for AVR
+ifeq ($(findstring avr, $(strip $(CC_NAME))), avr)
+    ifeq ($(shell expr $(CC_VERNUM) '>' 490), 1)
+        ASFLAGS  += -flto
+        CXXFLAGS += -fno-threadsafe-statics -flto -fno-devirtualize -fdiagnostics-color=$(DIAGNOSTICS_COLOR_WHEN)
+        CFLAGS   += -flto -fno-fat-lto-objects -fdiagnostics-color=$(DIAGNOSTICS_COLOR_WHEN)
+        LDFLAGS += -flto -fuse-linker-plugin
+    endif
+# Flags for ARM (most set in Sam.mk)
+else
+    ifeq ($(shell expr $(CC_VERNUM) '>' 490), 1)
+        CXXFLAGS += -fdiagnostics-color=$(DIAGNOSTICS_COLOR_WHEN)
+        CFLAGS   += -fdiagnostics-color=$(DIAGNOSTICS_COLOR_WHEN)
+    endif
 endif
+
 LDFLAGS       += -$(MCU_FLAG_NAME)=$(MCU) -Wl,--gc-sections -O$(OPTIMIZATION_LEVEL)
-ifeq ($(shell expr $(CC_VERNUM) '>' 490), 1)
-		LDFLAGS += -flto -fuse-linker-plugin
-endif
 SIZEFLAGS     ?= --mcu=$(MCU) -C
 
 # for backwards compatibility, grab ARDUINO_PORT if the user has it set
@@ -1665,9 +1689,9 @@ pre-build:
 
 # copied from arduino with start-group, end-group
 $(TARGET_ELF): 	$(LOCAL_OBJS) $(CORE_LIB) $(OTHER_OBJS)
-# sam devices need start and end group
+# sam devices need start and end group, and must be linked using C++ compiler
 ifeq ($(findstring sam, $(strip $(ARCHITECTURE))), sam)
-		$(CC) $(LINKER_SCRIPTS) -Wl,-Map=$(OBJDIR)/$(TARGET).map -o $@ $(LOCAL_OBJS) $(OTHER_OBJS) $(OTHER_LIBS) $(LDFLAGS) $(CORE_LIB) -Wl,--end-group
+		$(CXX) $(LINKER_SCRIPTS) -Wl,-Map=$(OBJDIR)/$(TARGET).map -o $@ $(LOCAL_OBJS) $(OTHER_OBJS) $(OTHER_LIBS) $(LDFLAGS) $(CORE_LIB) -Wl,--end-group
 # otherwise traditional
 else
 		$(CC) $(LDFLAGS) -o $@ $(LOCAL_OBJS) $(OTHER_OBJS) $(OTHER_LIBS) $(CORE_LIB) -lc -lm $(LINKER_SCRIPTS)
@@ -1792,11 +1816,11 @@ show_submenu:
 
 monitor:
 ifeq ($(notdir $(MONITOR_CMD)), putty)
-	ifneq ($(strip $(MONITOR_PARAMS)),)
+ifneq ($(strip $(MONITOR_PARAMS)),)
 	$(MONITOR_CMD) -serial -sercfg $(MONITOR_BAUDRATE),$(MONITOR_PARAMS) $(call get_monitor_port)
-	else
+else
 	$(MONITOR_CMD) -serial -sercfg $(MONITOR_BAUDRATE) $(call get_monitor_port)
-	endif
+endif
 else ifeq ($(notdir $(MONITOR_CMD)), picocom)
 		$(MONITOR_CMD) -b $(MONITOR_BAUDRATE) $(MONITOR_PARAMS) $(call get_monitor_port)
 else ifeq ($(notdir $(MONITOR_CMD)), cu)
