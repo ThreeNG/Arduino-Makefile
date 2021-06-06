@@ -1,12 +1,13 @@
 # Arduino Make file. Refer to https://github.com/sudar/Arduino-Makefile
 
-CFLAGS   =
-CXXFLAGS =
+CFLAGS=
+CXXFLAGS       = -I./include
 ARDMK_DIR      = /usr/share/arduino
 AVRDUDE_CONF   = /etc/avrdude.conf
 
 BOARD_TAG      = uno
-ARDUINO_LIBS   = LiquidCrystal Wire Servo
+ARDUINO_LIBS   = LiquidCrystal Wire Servo TFT
+
 include $(ARDMK_DIR)/Arduino.mk
 
 # --- leonardo (or pro micro w/leo bootloader)
