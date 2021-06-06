@@ -5,8 +5,9 @@
   This example code is in the public domain.
  */
  
-// Connect a LED to Pin 3. It might be different in different ATtiny micro controllers
-int led = 3;
+// Pin 13 has an LED connected on most Arduino boards.
+// give it a name:
+int led = 13;
 
 // the setup routine runs once when you press reset:
 void setup() {                

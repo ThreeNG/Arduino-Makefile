@@ -1,9 +1,13 @@
 # Arduino Make file. Refer to https://github.com/sudar/Arduino-Makefile
 
-BOARD_TAG    = uno
-include ../../Arduino.mk
+CFLAGS   =
+CXXFLAGS =
+ARDMK_DIR      = /usr/share/arduino
+AVRDUDE_CONF   = /etc/avrdude.conf
 
-
+BOARD_TAG      = uno
+ARDUINO_LIBS   = 
+include $(ARDMK_DIR)/Arduino.mk
 
 # --- leonardo (or pro micro w/leo bootloader)
 #BOARD_TAG    = leonardo
