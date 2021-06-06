@@ -6,7 +6,7 @@ ARDMK_DIR      = /usr/share/arduino
 AVRDUDE_CONF   = /etc/avrdude.conf
 
 BOARD_TAG      = uno
-ARDUINO_LIBS   = 
+ARDUINO_LIBS   = LiquidCrystal
 include $(ARDMK_DIR)/Arduino.mk
 
 # --- leonardo (or pro micro w/leo bootloader)
