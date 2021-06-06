@@ -1,12 +1,12 @@
 # Arduino Make file. Refer to https://github.com/sudar/Arduino-Makefile
 
 CFLAGS=
-CXXFLAGS       = -I./include
+CXXFLAGS       = 
 ARDMK_DIR      = /usr/share/arduino
 AVRDUDE_CONF   = /etc/avrdude.conf
 
 BOARD_TAG      = uno
-ARDUINO_LIBS   = LiquidCrystal Wire Servo TFT
+ARDUINO_LIBS   = LiquidCrystal OneWire
 
 include $(ARDMK_DIR)/Arduino.mk
 
